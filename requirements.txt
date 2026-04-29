@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+pandas
+numpy
+scipy
+textblob
+vaderSentiment
+nltk
+plotly
+kaleido
+groq
+python-multipart
+chardet
+openpyxl
+reportlab
