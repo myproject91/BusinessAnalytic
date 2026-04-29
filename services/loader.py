@@ -59,12 +59,12 @@ def detect_column_types(df: pd.DataFrame) -> dict:
 
         if pd.api.types.is_object_dtype(dtype):
             avg_len = series.astype(str).str.len().mean()
-            if n_unique == n_rows and avg_len < 30:
-                col_types[col] = 'id'
-            elif n_unique <= 20 and avg_len < 50:
-                col_types[col] = 'category'
-            elif avg_len >= 30:
+            if avg_len >= 30:
                 col_types[col] = 'text'
+            elif n_unique == n_rows and avg_len < 30:
+                col_types[col] = 'id'
+            elif n_unique <= 20:
+                col_types[col] = 'category'
             else:
                 col_types[col] = 'category'
         else:
