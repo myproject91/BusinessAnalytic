@@ -21,7 +21,7 @@ def clean_text(text: str) -> str:
         return ''
     text = text.lower()
     text = re.sub(r'http\S+', '', text)
-    text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
+    text = re.sub(r'[^a-zA-Z0-9\s]', ' ', text)
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
@@ -81,7 +81,7 @@ def run_sentiment_analysis(df: pd.DataFrame, text_col: str) -> dict:
     freq = {}
     for _, row in df.iterrows():
         for word in clean_text(str(row[text_col])).split():
-            if word not in stop_words and len(word) > 2:
+            if word not in stop_words and len(word) > 3:
                 freq[word] = freq.get(word, 0) + 1
 
     top_keywords = sorted(freq.items(), key=lambda x: x[1], reverse=True)[:20]
