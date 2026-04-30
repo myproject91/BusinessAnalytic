@@ -48,3 +48,23 @@ async def analyze(file: UploadFile = File(...)):
         'sentiment': nlp_results,
         'insight'  : insight
     }
+
+import os, httpx
+from pydantic import BaseModel
+
+class TelegramPayload(BaseModel):
+    chat_id: str
+    message: str
+
+@router.post('/telegram')
+async def send_telegram(payload: TelegramPayload):
+    token = os.environ.get('TELEGRAM_BOT_TOKEN')
+    if not token:
+        raise HTTPException(status_code=500, detail='Bot token not configured')
+    async with httpx.AsyncClient() as client:
+        await client.post(f'https://api.telegram.org/bot{token}/sendMessage', json={
+            'chat_id': payload.chat_id,
+            'text': payload.message,
+            'parse_mode': 'Markdown'
+        })
+    return {'status': 'sent'}
