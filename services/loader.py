@@ -33,6 +33,12 @@ def load_csv(file_bytes: bytes, filename: str) -> pd.DataFrame:
     )
     df = df.loc[:, ~df.columns.str.match(r'^unnamed')]
     df = df.dropna(how='all').reset_index(drop=True)
+
+    # Force convert object-like columns to string
+    for col in df.columns:
+        if df[col].dtype == object or str(df[col].dtype) == 'object':
+            df[col] = df[col].astype(str)
+
     return df
 
 
@@ -41,24 +47,29 @@ def detect_column_types(df: pd.DataFrame) -> dict:
     n_rows = len(df)
 
     for col in df.columns:
-        series = df[col].dropna()
+        series   = df[col].dropna()
         n_unique = series.nunique()
-        dtype = df[col].dtype
+        dtype    = df[col].dtype
 
+        # Numeric
         if pd.api.types.is_numeric_dtype(dtype):
             col_types[col] = 'id' if n_unique == n_rows else 'numeric'
             continue
 
+        # Datetime
         try:
-            parsed = pd.to_datetime(series, infer_datetime_format=True, errors='coerce')
-            if parsed.notna().sum() / len(series) >= 0.8:
+            parsed     = pd.to_datetime(series, infer_datetime_format=True, errors='coerce')
+            pct_parsed = parsed.notna().sum() / len(series)
+            if pct_parsed >= 0.8:
                 col_types[col] = 'datetime'
                 continue
         except Exception:
             pass
 
-        if pd.api.types.is_object_dtype(dtype):
+        # String — pakai str dtype check lebih robust
+        if pd.api.types.is_string_dtype(dtype) or pd.api.types.is_object_dtype(dtype) or dtype == 'object':
             avg_len = series.astype(str).str.len().mean()
+
             if avg_len >= 30:
                 col_types[col] = 'text'
             elif n_unique == n_rows and avg_len < 30:
@@ -68,7 +79,12 @@ def detect_column_types(df: pd.DataFrame) -> dict:
             else:
                 col_types[col] = 'category'
         else:
-            col_types[col] = 'unknown'
+            # Fallback — cek avg length langsung
+            try:
+                avg_len = series.astype(str).str.len().mean()
+                col_types[col] = 'text' if avg_len >= 30 else 'category'
+            except Exception:
+                col_types[col] = 'unknown'
 
     return col_types
 
@@ -83,7 +99,7 @@ def generate_data_profile(df: pd.DataFrame, col_types: dict) -> dict:
         for col in df.columns if missing[col] > 0
     }
 
-    profile['column_types'] = col_types
+    profile['column_types']    = col_types
     profile['columns_by_type'] = {
         tipe: [col for col, t in col_types.items() if t == tipe]
         for tipe in ['numeric', 'datetime', 'category', 'text', 'id', 'unknown']
