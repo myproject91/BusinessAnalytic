@@ -34,7 +34,7 @@ async def analyze(file: UploadFile = File(...)):
             'distribution'  : raw_nlp['distribution'],
             'aspect_summary': raw_nlp['aspect_summary'],
             'top_keywords'  : [[kw, freq] for kw, freq in raw_nlp['top_keywords']],
-            'records'       : raw_nlp['result_df'][['index','label','compound']].to_dict(orient='records')
+            'records'       : raw_nlp['result_df'][['index','label','compound','pos','neu']].to_dict(orient='records')
         }
 
     prompt  = build_prompt(profile, stats, anomalies, nlp_results)
