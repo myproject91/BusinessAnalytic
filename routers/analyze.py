@@ -1,4 +1,3 @@
-import io
 import pandas as pd
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from services.loader  import load_csv, detect_column_types, generate_data_profile
@@ -24,17 +23,18 @@ async def analyze(file: UploadFile = File(...)):
     category_cols = profile['columns_by_type']['category']
     text_cols     = profile['columns_by_type']['text']
 
-    stats      = run_statistical_analysis(df, numeric_cols)
-    anomalies  = detect_anomalies(df, numeric_cols)
-    cat_stats  = run_category_analysis(df, category_cols, numeric_cols)
+    stats     = run_statistical_analysis(df, numeric_cols)
+    anomalies = detect_anomalies(df, numeric_cols)
+    cat_stats = run_category_analysis(df, category_cols, numeric_cols)
 
     nlp_results = {}
     if text_cols:
-        raw_nlp     = run_sentiment_analysis(df, text_cols[0])
+        raw_nlp = run_sentiment_analysis(df, text_cols[0])
         nlp_results = {
             'distribution'  : raw_nlp['distribution'],
             'aspect_summary': raw_nlp['aspect_summary'],
-            'top_keywords'  : raw_nlp['top_keywords']
+            'top_keywords'  : [[kw, freq] for kw, freq in raw_nlp['top_keywords']],
+            'records'       : raw_nlp['result_df'][['index','label','compound']].to_dict(orient='records')
         }
 
     prompt  = build_prompt(profile, stats, anomalies, nlp_results)
