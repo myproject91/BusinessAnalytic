@@ -62,9 +62,10 @@ async def send_telegram(payload: TelegramPayload):
     if not token:
         raise HTTPException(status_code=500, detail='Bot token not configured')
     async with httpx.AsyncClient() as client:
-        await client.post(f'https://api.telegram.org/bot{token}/sendMessage', json={
+        res = await client.post(f'https://api.telegram.org/bot{token}/sendMessage', json={
             'chat_id': payload.chat_id,
             'text': payload.message,
             'parse_mode': 'Markdown'
         })
-    return {'status': 'sent'}
+        print(f"Telegram response: {res.status_code} {res.text}")
+    return {'status': 'sent', 'telegram_response': res.text}
