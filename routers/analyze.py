@@ -1,5 +1,5 @@
 import pandas as pd
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from services.loader  import load_csv, detect_column_types, generate_data_profile
 from services.stats   import run_statistical_analysis, detect_anomalies, run_category_analysis
 from services.nlp     import run_sentiment_analysis
@@ -69,3 +69,28 @@ async def send_telegram(payload: TelegramPayload):
         })
         print(f"Telegram response: {res.status_code} {res.text}")
     return {'status': 'sent', 'telegram_response': res.text}
+
+@router.post('/telegram-pdf')
+async def send_telegram_pdf(
+    chat_id: str = Form(...),
+    message: str = Form(...),
+    pdf: UploadFile = File(...)
+):
+    token = os.environ.get('TELEGRAM_BOT_TOKEN')
+    if not token:
+        raise HTTPException(status_code=500, detail='Bot token not configured')
+    async with httpx.AsyncClient(timeout=30) as client:
+        # Kirim teks dulu
+        await client.post(f'https://api.telegram.org/bot{token}/sendMessage', json={
+            'chat_id': chat_id,
+            'text': message
+        })
+        # Kirim PDF sebagai dokumen
+        pdf_bytes = await pdf.read()
+        res = await client.post(
+            f'https://api.telegram.org/bot{token}/sendDocument',
+            data={'chat_id': chat_id},
+            files={'document': ('Report.pdf', pdf_bytes, 'application/pdf')}
+        )
+        print(f"Telegram PDF response: {res.status_code} {res.text}")
+    return {'status': 'sent'}
