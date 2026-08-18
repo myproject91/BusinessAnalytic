@@ -57,7 +57,7 @@ def build_prompt(profile: dict, stats: dict, anomalies: dict, nlp_results: dict)
 def call_groq(prompt: str) -> str:
     try:
         response = client.chat.completions.create(
-            model='mixtral-8x7b-32768',
+            model='groq/compound',
             messages=[
                 {
                     'role'   : 'system',
