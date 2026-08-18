@@ -26,7 +26,7 @@ def build_prompt(profile: dict, stats: dict, anomalies: dict, nlp_results: dict)
     lines.append("")
     lines.append("")
 
-    # Hanya kirim data esensial, jangan kirim tabel korelasi atau distribusi detail
+    # Hanya kirim data esensial
     lines.append(f"Total baris  : {profile['shape']['rows']}")
     lines.append(f"Total kolom  : {profile['shape']['columns']}")
     lines.append(f"Missing      : {profile.get('missing_values', 'tidak ada')}")
@@ -57,7 +57,7 @@ def build_prompt(profile: dict, stats: dict, anomalies: dict, nlp_results: dict)
 def call_groq(prompt: str) -> str:
     try:
         response = client.chat.completions.create(
-            model='groq/compound',
+            model='qwen/qwen3.6-27b',  # Ganti ke model yang aman & irit
             messages=[
                 {
                     'role': 'system',
@@ -65,7 +65,7 @@ def call_groq(prompt: str) -> str:
                 },
                 {'role': 'user', 'content': prompt}
             ],
-            max_tokens=1000,  # Turunkan dari 2000 ke 1000 agar response lebih ringkas
+            max_tokens=500,  # Turunkan dari 1000 ke 500 agar response makin kecil & cepat
             temperature=0.2,
             top_p=0.9
         )
