@@ -7,35 +7,35 @@ def build_prompt(profile: dict, stats: dict, anomalies: dict, nlp_results: dict)
     lines = []
     lines.append("Anda adalah Data Analyst Senior dengan spesialisasi Business Intelligence.")
     lines.append("Tugas Anda adalah memberikan analisis profesional berdasarkan data yang disediakan.")
-    lines.append("Gunakan pendekatan statistik dalam menjelaskan temuan. Jangan gunakan kalimat template atau saran umum yang tidak berbasis angka.")
-    lines.append("Rujuk langsung pada nilai mean, median, standar deviasi, dan distribusi data yang ada.")
+    lines.append("Gunakan pendekatan statistik dalam menjelaskan temuan. Jangan gunakan kalimat template.")
+    lines.append("Rujuk langsung pada nilai mean, median, dan distribusi data yang ada.")
     lines.append("")
     lines.append("**Format Output WAJIB mengikuti struktur ini (Bahasa Indonesia profesional):**")
     lines.append("")
     lines.append("**Ringkasan Kondisi Data**")
-    lines.append("[tulis ringkasan datanya, sebutkan total baris/kolom, missing values, dan tipe data dominan]")
+    lines.append("[tulis ringkasan, sebutkan total baris/kolom, missing values, tipe data dominan]")
     lines.append("")
     lines.append("**Insight Statistik Utama**")
-    lines.append("[jelaskan angka-angka penting dari statistik deskriptif. Misal: rata-rata penjualan, produk termahal, distribusi yang paling sering muncul]")
+    lines.append("[jelaskan angka rata-rata, produk/harga tertinggi/terendah, dan distribusi kategori yang dominan]")
     lines.append("")
     lines.append("**Anomali & Pola Bisnis**")
-    lines.append("[jelaskan pola aneh yang ditemukan (misal: ada lonjakan pembelian di jam tertentu, atau produk dengan harga tinggi tapi jarang laku)]")
+    lines.append("[jelaskan anomali yang ditemukan beserta dampak bisnisnya]")
     lines.append("")
     lines.append("**Kesimpulan & Rekomendasi Data-Driven**")
-    lines.append("[berikan 3-5 poin rekomendasi yang KONKRET, spesifik, dan berdasarkan temuan statistik di atas]")
+    lines.append("[berikan 3-5 poin rekomendasi KONKRET berdasarkan temuan statistik di atas]")
     lines.append("")
     lines.append("")
 
-    # Masukkan data asli ke prompt
+    # Hanya kirim data esensial, jangan kirim tabel korelasi atau distribusi detail
     lines.append(f"Total baris  : {profile['shape']['rows']}")
     lines.append(f"Total kolom  : {profile['shape']['columns']}")
     lines.append(f"Missing      : {profile.get('missing_values', 'tidak ada')}")
     lines.append("")
 
     if stats.get('descriptive'):
-        lines.append("== STATISTIK DESKRIPTIF ==")
+        lines.append("== STATISTIK DESKRIPTIF (Mean / Median) ==")
         for col, stat in stats['descriptive'].items():
-            lines.append(f"{col}: {stat}")
+            lines.append(f"{col}: mean={stat['mean']}, median={stat['50%']}, min={stat['min']}, max={stat['max']}")
         lines.append("")
 
     if anomalies:
@@ -65,7 +65,7 @@ def call_groq(prompt: str) -> str:
                 },
                 {'role': 'user', 'content': prompt}
             ],
-            max_tokens=2000,
+            max_tokens=1000,  # Turunkan dari 2000 ke 1000 agar response lebih ringkas
             temperature=0.2,
             top_p=0.9
         )
@@ -77,7 +77,7 @@ def parse_groq_response(raw: str) -> dict:
     result = {'raw': raw, 'summary': '', 'anomaly_flags': '', 'sentiment': '', 'recommendations': '', 'strategy': ''}
     section_map = {
         'ringkasan kondisi data': 'summary',
-        'insight statistik utama': 'anomaly_flags', # agak dipaksa, tapi yg penting isinya
+        'insight statistik utama': 'anomaly_flags',
         'anomali & pola bisnis': 'sentiment',
         'kesimpulan & rekomendasi': 'recommendations'
     }
