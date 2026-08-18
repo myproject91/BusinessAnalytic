@@ -1,9 +1,8 @@
 import re
-import nltk
 import pandas as pd
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-nltk.download('stopwords', quiet=True)
+# VADER diinisialisasi sekali di level modul (jarang error)
 vader = SentimentIntensityAnalyzer()
 
 ASPECT_KEYWORDS = {
@@ -15,7 +14,6 @@ ASPECT_KEYWORDS = {
     'delivery'   : ['delivery', 'shipping', 'packaging', 'packed', 'arrived'],
 }
 
-
 def clean_text(text: str) -> str:
     if not isinstance(text, str):
         return ''
@@ -25,16 +23,16 @@ def clean_text(text: str) -> str:
     text = text.lower()
     return text
 
-
 def classify_sentiment(text: str) -> dict:
     cleaned = clean_text(text)
     if not cleaned:
         return {'label': 'neutral', 'compound': 0.0, 'pos': 0.0, 'neu': 0.0, 'neg': 0.0}
-
-    scores = vader.polarity_scores(cleaned)
+    try:
+        scores = vader.polarity_scores(cleaned)
+    except Exception:
+        scores = {'compound': 0.0, 'pos': 0.0, 'neu': 0.0, 'neg': 0.0}
     compound = scores['compound']
     label = 'positive' if compound >= 0.05 else 'negative' if compound <= -0.05 else 'neutral'
-
     return {
         'label'   : label,
         'compound': round(compound, 4),
@@ -43,8 +41,14 @@ def classify_sentiment(text: str) -> dict:
         'neg'     : round(scores['neg'], 4)
     }
 
-
 def run_sentiment_analysis(df: pd.DataFrame, text_col: str) -> dict:
+    # Download stopwords di dalam fungsi (di luar try biar gak blocking startup)
+    try:
+        import nltk
+        nltk.download('stopwords', quiet=True)
+    except Exception:
+        pass  # abaikan kalau gagal download
+
     results = []
     for idx, row in df.iterrows():
         sentiment = classify_sentiment(row[text_col])
@@ -55,7 +59,6 @@ def run_sentiment_analysis(df: pd.DataFrame, text_col: str) -> dict:
                 if kw in cleaned:
                     aspects[aspect] = sentiment['label']
                     break
-
         results.append({
             'index'   : idx,
             'label'   : sentiment['label'],
@@ -76,8 +79,13 @@ def run_sentiment_analysis(df: pd.DataFrame, text_col: str) -> dict:
                 aspect_summary[aspect] = {'positive': 0, 'neutral': 0, 'negative': 0}
             aspect_summary[aspect][label] += 1
 
-    from nltk.corpus import stopwords
-    stop_words = set(stopwords.words('english'))
+    # Import stopwords di sini (baru dipanggil saat diperlukan)
+    try:
+        from nltk.corpus import stopwords
+        stop_words = set(stopwords.words('english'))
+    except Exception:
+        stop_words = set()  # kalau gagal, jangan filter
+
     freq = {}
     for _, row in df.iterrows():
         for word in clean_text(str(row[text_col])).split():
