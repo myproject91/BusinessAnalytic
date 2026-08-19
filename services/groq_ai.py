@@ -61,7 +61,7 @@ def call_groq(prompt: str) -> str:
             messages=[
                 {
                     'role': 'system',
-                    'content': 'Anda adalah Data Analyst profesional. Analisis data dengan tajam menggunakan statistik. Berikan wawasan bisnis yang konkret, bukan saran umum.'
+                    'content': 'Anda adalah Data Analyst profesional. Analisis data dengan tajam menggunakan statistik. Berikan wawasan bisnis yang konkret, bukan saran umum. JANGAN PERNAH menampilkan proses berpikir atau reasoning. Langsung sajikan output sesuai format yang diminta.'
                 },
                 {'role': 'user', 'content': prompt}
             ],
